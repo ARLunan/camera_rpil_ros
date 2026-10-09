@@ -16,15 +16,20 @@ see `LICENSE`). Topics, parameters and the node itself are the same.
 | Package name | `camera_ros` | `camera_rpil_ros` |
 | Library target | `camera_component` | `camera_rpil_component` |
 | `Camera::start()` in `src/CameraNode.cpp` | passes the initial control list | called without a control list |
+| `move_control_values()` in `process()` | merges parameter values into each reused request | **disabled** (commented out) |
 | Extra launch file | - | `launch/imx219.launch.py` |
 
-Why the `start()` change: on the test Pi, the node found the camera but never
-published an image. The Raspberry Pi IPA worker process aborted right after
-capture started with `A list of V4L2 controls requires a ControlInfoMap`, while
-the libcamera `cam` tool streamed fine. Calling `start()` without the initial
-control list fixed it. The cause inside libcamera has not been identified.
-Parameter values are still applied: `process()` merges them into the reused
-requests.
+Why these two changes: on the test Pi, the node found the camera but never
+published an image. The Raspberry Pi IPA worker process aborted with
+`A list of V4L2 controls requires a ControlInfoMap`, while the libcamera `cam`
+tool streamed fine. Both changes together fixed it; with only the `start()`
+change the crash was still there. The cause inside libcamera has not been
+identified.
+
+**Limitation:** with `move_control_values()` disabled, camera parameters
+(exposure, gain, ...) set at runtime are not applied. Auto-exposure and
+auto-white-balance run normally in the IPA. A real fix needs the libcamera
+side understood first.
 
 ## Raspberry Pi 4 setup (`/boot/firmware/config.txt`)
 
@@ -39,15 +44,22 @@ Keep `dtoverlay=vc4-kms-v3d`, then reboot.
 
 ## Build
 
+From GitHub (replace `<your-github-user>` with the account that hosts the repo):
+
 ```
-mkdir -p ~/ros2_ws/src
-cp -r camera_rpil_ros ~/ros2_ws/src/        # or untar it there
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
+git clone https://github.com/<your-github-user>/camera_rpil_ros.git
 cd ~/ros2_ws
 source /opt/ros/lyrical/setup.bash
 rosdep install -y --from-paths src --ignore-src
 colcon build --packages-select camera_rpil_ros --parallel-workers 1 --event-handlers console_direct+
 source install/setup.bash
 ```
+
+The repository root is the package itself, so clone it into `src/` under the
+name `camera_rpil_ros`. Do not keep a second copy of the package, or one under a
+different folder name, in the same workspace: colcon stops with "Duplicate
+package names not supported".
 
 `--parallel-workers 1` keeps memory use low on a Pi 4. If rosdep tries to
 install a libcamera you do not want, add `--skip-keys=libcamera` (the package
@@ -73,6 +85,15 @@ Only one process can own the camera at a time. Stop any other `camera_node`
 
 ## Status
 
-Verified on the test Pi: a build of upstream `camera_ros` with the same one-line
-change published 30 Hz images. This renamed package itself has not been built
-yet, so a first `colcon build` is the real check.
+Built and run on a Raspberry Pi 4 with a Camera Module v2 (IMX219), Ubuntu 26.04,
+ROS 2 Lyrical, `ros-lyrical-libcamera` 0.7.2: the node publishes a live image
+(viewed in `rqt_image_view`). The same two changes on a source build of upstream
+`camera_ros` gave 30 Hz with working auto-exposure. Other boards, sensors and
+libcamera versions are untested. With only the `start()` change the crash was
+still present; both changes are needed here.
+
+## Licence and credit
+
+MIT, see `LICENSE`. This is a modified copy of `camera_ros` by Christian Rauch;
+his copyright notice is kept. If the issue is fixed upstream, prefer the
+upstream package.

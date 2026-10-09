@@ -616,8 +616,8 @@ CameraNode::CameraNode(const rclcpp::NodeOptions &options)
   // camera_rpil_ros change: passing the initial ControlList to Camera::start()
   // made the Raspberry Pi (rpi/vc4) IPA worker abort with "A list of V4L2
   // controls requires a ControlInfoMap" on libcamera 0.7.2 (Pi 4, IMX219).
-  // The parameter values are still applied: process() merges them into the
-  // reused requests via move_control_values().
+  // NOTE: this alone was NOT enough on the test Pi. The IPA worker still aborted
+  // until move_control_values() in process() was also disabled (see below).
   switch (camera->start()) {
   case 0:
     // OK
@@ -846,7 +846,12 @@ CameraNode::process(libcamera::Request *const request)
 
     // queue the request again for the next frame and update controls
     request->reuse(libcamera::Request::ReuseBuffers);
-    parameter_handler.move_control_values(request->controls());
+    // camera_rpil_ros change: DISABLED. Merging the ROS parameter values into the
+    // reused request sent a ControlList that made the Raspberry Pi (rpi/vc4) IPA
+    // worker abort ("A list of V4L2 controls requires a ControlInfoMap",
+    // libcamera 0.7.2, Pi 4, IMX219). Side effect: changing camera parameters
+    // (exposure, gain, ...) at runtime has no effect; auto-exposure still works.
+    // parameter_handler.move_control_values(request->controls());
 
     for (const auto &[id, value] : request->controls()) {
       const std::string &name = libcamera::controls::controls.at(id)->name();

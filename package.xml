@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>camera_rpil_ros</name>
-  <version>0.7.1</version>
-  <description>libcamera camera node for Raspberry Pi cameras (e.g. IMX219) on ROS 2 Lyrical / Ubuntu 26.04, derived from camera_ros 0.7.0 with a fix that starts the camera without an initial control list</description>
+  <version>0.7.2</version>
+  <description>libcamera camera node for Raspberry Pi cameras (e.g. IMX219) on ROS 2 Lyrical / Ubuntu 26.04, derived from camera_ros 0.7.0 with workarounds for a Raspberry Pi IPA crash (no initial control list, runtime parameter merging disabled)</description>
   <maintainer email="arlunan@ieee.org">arlunan</maintainer>
   <license>MIT</license>
 
