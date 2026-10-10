@@ -48,7 +48,7 @@ From GitHub (replace `<your-github-user>` with the account that hosts the repo):
 
 ```
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
-git clone https://github.com/<your-github-user>/camera_rpil_ros.git
+git clone https://github.com/ARLunan/camera_rpil_ros/edit/main/README.md
 cd ~/ros2_ws
 source /opt/ros/lyrical/setup.bash
 rosdep install -y --from-paths src --ignore-src
